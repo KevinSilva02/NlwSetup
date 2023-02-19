@@ -9,7 +9,6 @@ import { api } from "../lib/axios";
 const avaiableWeekDays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 
 export function New(){
-    const git = 'hub';
     const [weekDays, setWeekDays] = useState<number[]>([])
     const [title, setTitle] = useState('');
 
