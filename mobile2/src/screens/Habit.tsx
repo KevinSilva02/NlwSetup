@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
+import colors from "tailwindcss/colors";
 
 import { useRoute } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore'
+import { Feather } from '@expo/vector-icons';
 
 import { generateProgressPercentage } from "../utils/generate-progress-percentage";
 
@@ -33,6 +36,7 @@ interface HabitsProps {
     weekDays: number[];
     dateCompleted: string[],
     idHabitCompleted: string[]
+    dateRemoved: string
 }
 interface DaysCompletedProps {
     id: string,
@@ -177,13 +181,21 @@ export function Habit() {
             Alert.alert('Ops', 'Não foi possivel atualizar os status do hábito');
         }
     }
+    function deleteHabit(habitId: string){
+        firestore().
+        collection('habit')
+        .doc(habitId)
+        .update({
+            dateRemoved: date
+        })
+    }
 
     useEffect(() => {
         firestore().
             collection("habit")
             .onSnapshot(snapshot => {
                 const data = snapshot.docs.map(doc => {
-                    const { title, created_at, weekDays, completed, dateCompleted, idHabitCompleted } = doc.data()
+                    const { title, created_at, weekDays, completed, dateCompleted, idHabitCompleted, dateRemoved } = doc.data()
 
                     return {
                         id: doc.id,
@@ -191,7 +203,8 @@ export function Habit() {
                         day: dateFormat(created_at),
                         weekDays,
                         dateCompleted,
-                        idHabitCompleted
+                        idHabitCompleted,
+                        dateRemoved
                     }
                 })
                 setHabitsPossible(data)
@@ -222,12 +235,16 @@ export function Habit() {
         )
     }
 
+    habitsPossible.map(habits => (
+        console.log(habits.dateRemoved < date)
+    ))
+
     return (
         <View className="flex-1 bg-background px-8 pt-16" >
             {
                 habitsPossible.map(habits => (
                     habits.day &&
-                        date >= habits.day ?
+                        date >= habits.day && date < habits.dateRemoved ?
                         habits.weekDays.map(day => (
                             day == weekDay ? somarum() : null
                         )) : null
@@ -271,15 +288,27 @@ export function Habit() {
                     {
                         habitsPossible.map(habits => (
                             habits.day &&
-                                date >= habits.day ?
+                                date >= habits.day && date > habits.dateRemoved ?
                                 habits.weekDays.map(day => (
-                                    day == weekDay ? <Checkbox
-                                        key={habits.id}
-                                        title={habits.title}
-                                        disabled={isDatePast}
-                                        onPress={() => handleToggleHabit(habits.id)}
-                                        checked={habits.dateCompleted.includes(date)}
-                                    />
+                                    day == weekDay ? 
+                                    <View key={habits.id} className="w-full flex-row justify-between" >
+                                        <Checkbox
+                                            key={habits.id}
+                                            title={habits.title}
+                                            disabled={isDatePast}
+                                            onPress={() => handleToggleHabit(habits.id)}
+                                            checked={habits.dateCompleted.includes(date)}
+                                        />
+                                        <TouchableOpacity>
+                                            <Feather
+                                                name="delete"
+                                                size={24}
+                                                color={colors.zinc[400]}
+                                                onPress={() => deleteHabit(habits.id)}
+                                            />
+                                                
+                                        </TouchableOpacity>
+                                    </View>
                                         : null
                                 ))
                                 : null

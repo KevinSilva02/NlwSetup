@@ -26,6 +26,7 @@ export function New(){
     const [daysCompleted, setDaysCompleted] = useState<DaysCompletedProps[]>([])
     const [title, setTitle] = useState('');
     const today = dayjs().startOf('day').toDate()
+    const RemovedDay = dayjs().endOf('years').toDate()
     let isToday: string | DaysCompletedProps
 
     function handleToggleWeekDay(weekDayIndex: number){
@@ -52,6 +53,7 @@ export function New(){
             })
 
             setDaysCompleted(data)
+            
         })
     },[])
 
@@ -68,7 +70,8 @@ export function New(){
                 weekDays,
                 created_at: today,
                 dateCompleted: [''],
-                idHabitCompleted: ['']
+                idHabitCompleted: [''],
+                dateRemoved: RemovedDay
             })
           
             setTitle('')
