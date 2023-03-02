@@ -3,19 +3,22 @@ import { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, Alert } from "react-native";
 
 import { generateRangeDatesFromYearStart } from "../utils/generate-range-between-dates";
+import { dateFormat } from "../utils/firestoreDateformat";
+
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import firestore from '@react-native-firebase/firestore';
 
 import { HabitDay, DAY_SIZE } from "../components/HabitDay";
 import { Header } from "../components/Header";
 import { Loadiang } from "../components/Loading";
+
 import dayjs from "dayjs";
 
-type SummaryProps = Array<{
-    id: string;
+interface SummaryProps {
     date: string;
-    amount: number;
+    possibles: number;
     completed: number;
-}>
+}[]
 
 const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const datesFromYearStart = generateRangeDatesFromYearStart();
@@ -23,42 +26,49 @@ const datesFromYearStart = generateRangeDatesFromYearStart();
 const minimumSummaryDatesSize = 18*5;
 const amountOfDaysToFill = minimumSummaryDatesSize - datesFromYearStart.length
 
- 
+
 
 export function Home() {
     const [loading, setLoading] = useState(true)
-    const [summary, setSummary] = useState<SummaryProps>([])
+    const [summary, setSummary] = useState<SummaryProps[]>([])
     const { navigate } = useNavigation();
 
-    async function fetchData(){
-        try {
-            setLoading(true);
+    let teste
+    let arr: { date: string; id: string; amount: number; completed: number; }[] 
+    let retorno
+    let dayWhitHabits: {day: string}[]
+    let cont = 0
+    let dayCompleted
 
-            const response = await api.get('/summary');
-            setSummary(response.data)
-            console.log(response.data)
-            
+      
 
-            
-        } catch (error) {
-            Alert.alert('Ops', 'Não foi possivel carregar os sumarios de habitos')
-            console.log(error);
-        } finally{
-            setLoading(false)
-        }
+    function fetchData(){
+        firestore().
+            collection("daysCompleted")
+            .onSnapshot(snapshot => {
+                const data = snapshot.docs.map(doc => {
+                    const { date, possibles, completed } = doc.data()
+
+                    return {
+                        id: doc.id,
+                        date,
+                        possibles,
+                        completed
+                    }
+                })
+                setSummary(data)
+                setLoading(false)
+            })
     }
 
+    
     useFocusEffect(useCallback(() => {
-        fetchData();
+        fetchData(); 
     },[]))
 
-    if(loading){
-        return (
-            <Loadiang />
-        )
-    }
     return(
         <View className="flex-1 bg-background px-8 pt-16 ">
+            
             <Header />
 
             <View className="flex-row mt-6 mb-2">
@@ -73,7 +83,10 @@ export function Home() {
                         </Text>
                     ))
                 }
-            </View>
+            </View>{
+                <View>
+                </View>
+            }
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom: 100}}
@@ -92,7 +105,7 @@ export function Home() {
                                         onPress={() => navigate('habit', { date: date.toISOString() })}
                                         date={date}
                                         amountCompleted={dayWithHabits?.completed}
-                                        amountOfHabits={dayWithHabits?.amount}
+                                        amountOfHabits={dayWithHabits?.possibles}
                                     />
                                 )
                             })
