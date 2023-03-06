@@ -1,4 +1,8 @@
 export function generateProgressPercentage(total: number, completed: number){
-    return Math.round((completed / total) * 100);
+    if(total == 0){
+        return 0
+    }else{
+        return Math.round((completed / total) * 100);
+    }
 
 }

@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import fistore from "@react-native-firebase/firestore"
+import auth, { firebase } from '@react-native-firebase/auth'
+import { Feather } from '@expo/vector-icons';
 
 import { BackButton } from "../components/BackButton";
 import { Checkbox } from "../components/Checkbox";
-
-import { Feather } from '@expo/vector-icons';
 
 import colors from "tailwindcss/colors";
 import dayjs from "dayjs";
@@ -18,7 +18,6 @@ interface DaysCompletedProps {
     completed: string
 }
 
-
 const avaiableWeekDays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 
 export function New(){
@@ -27,7 +26,7 @@ export function New(){
     const [title, setTitle] = useState('');
     const today = dayjs().startOf('day').toDate()
     const RemovedDay = dayjs().endOf('years').toDate()
-    let isToday: string | DaysCompletedProps
+    const users = firebase.auth().currentUser
 
     function handleToggleWeekDay(weekDayIndex: number){
         if(weekDays.includes(weekDayIndex)){
@@ -57,7 +56,7 @@ export function New(){
         })
     },[])
 
-    async function handleCreateNewHabit(){
+    function handleCreateNewHabit(){
         try{
             if(!title.trim() || weekDays.length === 0){
                 return Alert.alert('Novos', 'Informe um novo hábito e escolha um dia')
@@ -71,13 +70,12 @@ export function New(){
                 created_at: today,
                 dateCompleted: [''],
                 idHabitCompleted: [''],
-                dateRemoved: RemovedDay
+                dateRemoved: RemovedDay,
+                idUser: users?.uid
             })
           
             setTitle('')
             setWeekDays([])
-
-            isToday = today.toISOString()
 
             daysCompleted.length > 0 ?
             daysCompleted.map(day => (

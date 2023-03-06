@@ -5,6 +5,7 @@ import { useFonts, Inter_400Regular, Inter_600SemiBold ,Inter_700Bold, Inter_800
 
 import { Loadiang } from './src/components/Loading';
 import { Routes } from './src/routes';
+import { SingIn } from './src/screens/SingIn';
 
 export default function App() {
   const [fontsLoaded] = useFonts({

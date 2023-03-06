@@ -1,33 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
-import colors from "tailwindcss/colors";
-
 import { useRoute } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore'
 import { Feather } from '@expo/vector-icons';
-
-import { generateProgressPercentage } from "../utils/generate-progress-percentage";
+import { firebase } from '@react-native-firebase/auth'
 
 import { BackButton } from "../components/BackButton";
 import { ProgressBar } from "../components/ProgressBar";
 import { Checkbox } from "../components/Checkbox";
 import { Loadiang } from "../components/Loading";
-import { HabitEmpty } from "../components/HabitEmpty";
 
-import clsx from "clsx";
-import dayjs, { Dayjs } from "dayjs";
 import { dateFormat } from "../utils/firestoreDateformat";
+
+import dayjs from "dayjs";
+import colors from "tailwindcss/colors";
+import clsx from "clsx";
+
+import { generateProgressPercentage } from "../utils/generate-progress-percentage";
 
 interface Params {
     date: string
-}
-interface DayInfoProps {
-    completedHabits: string[]
-    posibleHabits: {
-        id: string;
-        title: string;
-    }[]
 }
 interface HabitsProps {
     id: string;
@@ -36,7 +29,7 @@ interface HabitsProps {
     weekDays: number[];
     dateCompleted: string[],
     idHabitCompleted: string[]
-    dateRemoved: string
+    dayRemoved?: string
 }
 interface DaysCompletedProps {
     id: string,
@@ -44,7 +37,6 @@ interface DaysCompletedProps {
     possibles: string;
     completed: string;
 }
-
 
 export function Habit() {
     const route = useRoute();
@@ -58,6 +50,9 @@ export function Habit() {
     const isDatePast = parsedDate.endOf('day').isBefore(new Date());
     const dayOfWeek = parsedDate.format('dddd');
     const dayAndMonth = parsedDate.format('DD/MM');
+    const today = dayjs().startOf('day').toDate();
+    const users = firebase.auth().currentUser
+    
     let completed = false;
     let cont = 0;
     let contCompleted = 0;
@@ -69,7 +64,7 @@ export function Habit() {
     function somarumCompleted() {
         contCompleted = contCompleted + 1
     }
-    async function handleToggleHabit(habitId: string) {
+    function handleToggleHabit(habitId: string) {
 
         try {
             habitsPossible.map(habits => (
@@ -157,7 +152,8 @@ export function Habit() {
                         .add({
                             date: date,
                             possibles: cont,
-                            completed: contCompleted + 1
+                            completed: contCompleted + 1,
+                            idUser: users?.uid
                         })
                                 
                     ))
@@ -186,13 +182,14 @@ export function Habit() {
         collection('habit')
         .doc(habitId)
         .update({
-            dateRemoved: date
+            dateRemoved: today
         })
     }
 
     useEffect(() => {
         firestore().
             collection("habit")
+            .where('idUser', '==', users?.uid)
             .onSnapshot(snapshot => {
                 const data = snapshot.docs.map(doc => {
                     const { title, created_at, weekDays, completed, dateCompleted, idHabitCompleted, dateRemoved } = doc.data()
@@ -204,7 +201,7 @@ export function Habit() {
                         weekDays,
                         dateCompleted,
                         idHabitCompleted,
-                        dateRemoved
+                        dayRemoved: dateFormat(dateRemoved)
                     }
                 })
                 setHabitsPossible(data)
@@ -235,16 +232,15 @@ export function Habit() {
         )
     }
 
-    habitsPossible.map(habits => (
-        console.log(habits.dateRemoved < date)
-    ))
+    
 
     return (
         <View className="flex-1 bg-background px-8 pt-16" >
-            {
+            {  
                 habitsPossible.map(habits => (
-                    habits.day &&
-                        date >= habits.day && date < habits.dateRemoved ?
+                    habits.dayRemoved &&
+                    habits.day && habits.dayRemoved &&
+                        date >= habits.day && dayjs(habits.dayRemoved).isAfter(date) ?
                         habits.weekDays.map(day => (
                             day == weekDay ? somarum() : null
                         )) : null
@@ -260,6 +256,8 @@ export function Habit() {
                                 : null
 
                         )) : null
+
+                    
                 ))
             }
             <ScrollView
@@ -288,7 +286,7 @@ export function Habit() {
                     {
                         habitsPossible.map(habits => (
                             habits.day &&
-                                date >= habits.day && date > habits.dateRemoved ?
+                                date >= habits.day && dayjs(habits.dayRemoved).isAfter(date) ?
                                 habits.weekDays.map(day => (
                                     day == weekDay ? 
                                     <View key={habits.id} className="w-full flex-row justify-between" >
@@ -305,6 +303,7 @@ export function Habit() {
                                                 size={24}
                                                 color={colors.zinc[400]}
                                                 onPress={() => deleteHabit(habits.id)}
+                                                disabled={isDatePast}
                                             />
                                                 
                                         </TouchableOpacity>

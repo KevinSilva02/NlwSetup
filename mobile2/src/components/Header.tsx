@@ -1,4 +1,4 @@
-import { TouchableOpacity, View, Text } from "react-native";
+import { TouchableOpacity, View, Text, Alert } from "react-native";
 import { Feather } from '@expo/vector-icons';
 import colors from 'tailwindcss/colors'
 
@@ -6,8 +6,19 @@ import { useNavigation } from '@react-navigation/native'
 
 import Logo from "../assets/logo.svg";
 
+import auth from '@react-native-firebase/auth'
+
 export function Header(){
     const { navigate } = useNavigation();
+
+    function handleLogOut(){
+        auth()
+        .signOut()
+        .catch(error => {
+            console.log(error);
+        return Alert.alert('Sair', 'Não foi possivel sair')
+    });
+    }
 
     return(
         <View className="w-full flex-row items-center justify-between">
@@ -24,6 +35,14 @@ export function Header(){
                     Novo
                 </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity 
+                activeOpacity={0.7} 
+                onPressIn={handleLogOut}
+            >
+                <Feather name="log-out" color={colors.violet[500]} size={20} />
+            </TouchableOpacity>
+
 
         </View>
     )

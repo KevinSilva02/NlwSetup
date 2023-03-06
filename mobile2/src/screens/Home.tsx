@@ -1,16 +1,15 @@
-import { api } from "../lib/axios";
-import { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, Alert } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, ScrollView } from "react-native";
 
-import { generateRangeDatesFromYearStart } from "../utils/generate-range-between-dates";
-import { dateFormat } from "../utils/firestoreDateformat";
-
-import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import firestore from '@react-native-firebase/firestore';
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import { firebase } from "@react-native-firebase/auth";
 
+import { Loadiang } from "../components/Loading";
 import { HabitDay, DAY_SIZE } from "../components/HabitDay";
 import { Header } from "../components/Header";
-import { Loadiang } from "../components/Loading";
+
+import { generateRangeDatesFromYearStart } from "../utils/generate-range-between-dates";
 
 import dayjs from "dayjs";
 
@@ -18,7 +17,13 @@ interface SummaryProps {
     date: string;
     possibles: number;
     completed: number;
+    idUser: string;
 }[]
+
+interface UserProps {
+    id: string;
+    name: string
+}
 
 const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const datesFromYearStart = generateRangeDatesFromYearStart();
@@ -26,50 +31,73 @@ const datesFromYearStart = generateRangeDatesFromYearStart();
 const minimumSummaryDatesSize = 18*5;
 const amountOfDaysToFill = minimumSummaryDatesSize - datesFromYearStart.length
 
-
-
 export function Home() {
     const [loading, setLoading] = useState(true)
     const [summary, setSummary] = useState<SummaryProps[]>([])
+    const [email, setEmail] = useState('')
+    const [user, setUser] = useState<UserProps[]>([])
     const { navigate } = useNavigation();
 
-    let teste
-    let arr: { date: string; id: string; amount: number; completed: number; }[] 
-    let retorno
-    let dayWhitHabits: {day: string}[]
-    let cont = 0
-    let dayCompleted
-
-      
+    const users = firebase.auth().currentUser
 
     function fetchData(){
+
+        firestore()
+        .collection('user')
+        .where('email', '==', email)
+        .onSnapshot(snapshot => {
+        const data = snapshot.docs.map(doc => {
+            const { name } = doc.data();
+
+            return {
+                id: doc.id,
+                name
+            }
+        })
+        setUser(data)
+
+        })
+
+
         firestore().
             collection("daysCompleted")
+            .where('idUser', '==', users?.uid)
             .onSnapshot(snapshot => {
                 const data = snapshot.docs.map(doc => {
-                    const { date, possibles, completed } = doc.data()
+                    const { date, possibles, completed, idUser } = doc.data()
 
                     return {
                         id: doc.id,
                         date,
                         possibles,
-                        completed
+                        completed,
+                        idUser
                     }
                 })
                 setSummary(data)
-                setLoading(false)
             })
     }
 
-    
     useFocusEffect(useCallback(() => {
         fetchData(); 
-    },[]))
-
+        setLoading(false)
+    },[]))  
+    
+    if(loading){
+        return <Loadiang />
+    }
+    
     return(
         <View className="flex-1 bg-background px-8 pt-16 ">
             
             <Header />
+
+            <Text className="text-lg">
+                {
+                    users?.displayName == null ? null :
+                    `Olá, ${users?.displayName}`
+                }
+            </Text>
 
             <View className="flex-row mt-6 mb-2">
                 {
@@ -83,10 +111,7 @@ export function Home() {
                         </Text>
                     ))
                 }
-            </View>{
-                <View>
-                </View>
-            }
+            </View>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom: 100}}
@@ -100,6 +125,7 @@ export function Home() {
                                     return dayjs(date).isSame(day.date, 'day')
                                 })
                                 return(
+                              
                                     <HabitDay 
                                         key={date.toISOString()}
                                         onPress={() => navigate('habit', { date: date.toISOString() })}
