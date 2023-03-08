@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "habits",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -34,6 +34,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bb1c2672-6d99-4f0f-8fec-c641850ce707"
+      }
     }
   }
 }

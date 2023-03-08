@@ -74,7 +74,8 @@ export function Home() {
                         idUser
                     }
                 })
-                setSummary(data)
+                setSummary(data)    
+                console.log(data)  
             })
     }
 

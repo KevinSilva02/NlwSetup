@@ -52,11 +52,13 @@ export function Habit() {
     const dayAndMonth = parsedDate.format('DD/MM');
     const today = dayjs().startOf('day').toDate();
     const users = firebase.auth().currentUser
-    
+
     let completed = false;
     let cont = 0;
     let contCompleted = 0;
     let completo = ['']
+    let teste: boolean
+    let idDay: string | undefined
 
     function somarum() {
         cont = cont + 1
@@ -67,6 +69,7 @@ export function Habit() {
     function handleToggleHabit(habitId: string) {
 
         try {
+            setLoading(true)
             habitsPossible.map(habits => (
                 habits.day &&
                     date >= habits.day ?
@@ -101,14 +104,14 @@ export function Habit() {
                     })
 
                 daysCompleted.map(day => (
-                    date == day.date ? 
-                    firestore()
-                    .collection('daysCompleted')
-                    .doc(day.id)
-                    .update({
-                        completed: contCompleted - 1
-                    })
-                    : null
+                    date == day.date ?
+                        firestore()
+                            .collection('daysCompleted')
+                            .doc(day.id)
+                            .update({
+                                completed: contCompleted - 1
+                            })
+                        : null
                 ))
 
             } else {
@@ -134,18 +137,13 @@ export function Habit() {
                         dateCompleted: completo
                     })
 
-                    daysCompleted.length > 0 ?
+                daysCompleted.length > 0 ?
                     daysCompleted.map(days => (
                         days.date == date ?
-                        firestore()
-                        .collection('daysCompleted')
-                        .doc(days.id)
-                        .update({
-                            date: date,
-                            possibles: cont,
-                            completed: contCompleted + 1
-                        })
-                        
+                            (teste = true,
+                                idDay = days.id)
+                            : teste == true ? teste = true : teste = false
+                    ))
                     :
                     firestore()
                         .collection('daysCompleted')
@@ -155,21 +153,34 @@ export function Habit() {
                             completed: contCompleted + 1,
                             idUser: users?.uid
                         })
-                                
-                    ))
-                    :
+
+                console.log(teste)
+
+                if (teste) {
+                    firestore()
+                        .collection('daysCompleted')
+                        .doc(idDay)
+                        .update({
+                            date: date,
+                            possibles: cont,
+                            completed: contCompleted + 1
+                        })
+                } else {
                     firestore()
                         .collection('daysCompleted')
                         .add({
                             date: date,
                             possibles: cont,
-                            completed: contCompleted + 1
+                            completed: contCompleted + 1,
+                            idUser: users?.uid
                         })
-
+                }
             }
 
 
+
             completed = false
+            setLoading(false)
 
 
         } catch (error) {
@@ -177,13 +188,13 @@ export function Habit() {
             Alert.alert('Ops', 'Não foi possivel atualizar os status do hábito');
         }
     }
-    function deleteHabit(habitId: string){
+    function deleteHabit(habitId: string) {
         firestore().
-        collection('habit')
-        .doc(habitId)
-        .update({
-            dateRemoved: today
-        })
+            collection('habit')
+            .doc(habitId)
+            .update({
+                dateRemoved: today
+            })
     }
 
     useEffect(() => {
@@ -232,14 +243,14 @@ export function Habit() {
         )
     }
 
-    
+
 
     return (
         <View className="flex-1 bg-background px-8 pt-16" >
-            {  
+            {
                 habitsPossible.map(habits => (
                     habits.dayRemoved &&
-                    habits.day && habits.dayRemoved &&
+                        habits.day && habits.dayRemoved &&
                         date >= habits.day && dayjs(habits.dayRemoved).isAfter(date) ?
                         habits.weekDays.map(day => (
                             day == weekDay ? somarum() : null
@@ -257,7 +268,7 @@ export function Habit() {
 
                         )) : null
 
-                    
+
                 ))
             }
             <ScrollView
@@ -288,26 +299,29 @@ export function Habit() {
                             habits.day &&
                                 date >= habits.day && dayjs(habits.dayRemoved).isAfter(date) ?
                                 habits.weekDays.map(day => (
-                                    day == weekDay ? 
-                                    <View key={habits.id} className="w-full flex-row justify-between" >
-                                        <Checkbox
-                                            key={habits.id}
-                                            title={habits.title}
-                                            disabled={isDatePast}
-                                            onPress={() => handleToggleHabit(habits.id)}
-                                            checked={habits.dateCompleted.includes(date)}
-                                        />
-                                        <TouchableOpacity>
-                                            <Feather
-                                                name="delete"
-                                                size={24}
-                                                color={colors.zinc[400]}
-                                                onPress={() => deleteHabit(habits.id)}
+                                    day == weekDay ?
+                                        <View key={habits.id} className="w-full flex-row justify-between" >
+                                            <Checkbox
+                                                key={habits.id}
+                                                title={habits.title}
                                                 disabled={isDatePast}
+                                                onPress={() => handleToggleHabit(habits.id)}
+                                                checked={habits.dateCompleted.includes(date)}
+                                                touchSoundDisabled={loading}
                                             />
-                                                
-                                        </TouchableOpacity>
-                                    </View>
+                                            <TouchableOpacity className={clsx("mt-6", {
+                                                ["opacity-50"]: isDatePast
+                                            })}>
+                                                <Feather
+                                                    name="delete"
+                                                    size={24}
+                                                    color={colors.zinc[400]}
+                                                    onPress={() => deleteHabit(habits.id)}
+                                                    disabled={isDatePast}
+                                                />
+
+                                            </TouchableOpacity>
+                                        </View>
                                         : null
                                 ))
                                 : null
