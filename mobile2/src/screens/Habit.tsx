@@ -221,6 +221,7 @@ export function Habit() {
 
         firestore()
             .collection('daysCompleted')
+            .where('idUser', '==', users?.uid)
             .onSnapshot(snaphot => {
                 const data = snaphot.docs.map(doc => {
                     const { date, possibles, completed } = doc.data()

@@ -84,13 +84,13 @@ export function SingIn(){
             </TouchableOpacity>
 
             <TouchableOpacity className="mt-12" onPress={handleSingUp}>
-                <Text>
+                <Text className="text-white">
                     Não possui uma conta Cadastre-se
                 </Text>
             </TouchableOpacity>
 
             <TouchableOpacity className="mt-12" onPress={handleResetPassword}>
-                <Text>
+                <Text className="text-white">
                     Esqueci minha senha
                 </Text>
             </TouchableOpacity>
